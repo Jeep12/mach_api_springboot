@@ -62,48 +62,55 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         return authenticationManager.authenticate(authenticationToken);
     }
 
- @Override
-protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
-        Authentication authResult) throws IOException, ServletException {
+    @Override
+    protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response,
+                                            FilterChain chain, Authentication authResult) throws IOException, ServletException {
 
-    // Obtener los detalles del usuario autenticado
-    org.springframework.security.core.userdetails.User userDetails = 
-    (org.springframework.security.core.userdetails.User) authResult.getPrincipal();
+        org.springframework.security.core.userdetails.User userDetails =
+                (org.springframework.security.core.userdetails.User) authResult.getPrincipal();
 
-    
-    String email = userDetails.getUsername();
-    Collection<? extends GrantedAuthority> roles = authResult.getAuthorities();
+        String email = userDetails.getUsername();
+        Collection<? extends GrantedAuthority> roles = authResult.getAuthorities();
 
-    // Crear un mapa para los claims
-    Map<String, Object> claims = new HashMap<>();
-    claims.put("email", email);
-    claims.put("authorities", roles.stream()
-                                  .map(GrantedAuthority::getAuthority)
-                                  .collect(Collectors.toList()));
+        // Access token
+        Map<String, Object> accessClaims = new HashMap<>();
+        accessClaims.put("email", email);
+        accessClaims.put("authorities", roles.stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList()));
+        accessClaims.put("token_type", "access");
 
-    // Construir el token JWT
-    String token = Jwts.builder()
-            .subject(email) // Asignar el sujeto (usuario)
-            .claims(claims)  // Agregar los claims
-            .issuedAt(new Date()) // Fecha de emisión
-            .expiration(new Date(System.currentTimeMillis() + 3600000)) // Expira en 1 hora
-            .signWith(SECRET_KEY) // Firmar con la clave secreta
-            .compact(); // Generar el token
+        String accessToken = Jwts.builder()
+                .subject(email)
+                .claims(accessClaims)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION))
+                .signWith(SECRET_KEY)
+                .compact();
 
-    // Agregar el token al encabezado de la respuesta
-    response.addHeader(HEADER_AUTHORIZATION, PREFIX_TOKEN + token);
+        // Refresh token (más simple, sin roles)
+        Map<String, Object> refreshClaims = new HashMap<>();
+        refreshClaims.put("token_type", "refresh");
 
-    // Crear el cuerpo de la respuesta
-    Map<String, String> body = new HashMap<>();
-    body.put("token", token);
-    body.put("email", email);
-    body.put("message", String.format("Hola, has iniciado sesión con éxito con %s", email));
+        String refreshToken = Jwts.builder()
+                .subject(email)
+                .claims(refreshClaims)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRATION))
+                .signWith(SECRET_KEY)
+                .compact();
 
-    // Escribir la respuesta en formato JSON
-    response.getWriter().write(new ObjectMapper().writeValueAsString(body));
-    response.setContentType(CONTENT_TYPE);
-    response.setStatus(200);
-}
+        // Respuesta
+        Map<String, String> body = new HashMap<>();
+        body.put("access_token", accessToken);
+        body.put("refresh_token", refreshToken);
+        body.put("email", email);
+        body.put("message", "Autenticación exitosa");
+
+        response.setContentType(CONTENT_TYPE);
+        response.getWriter().write(new ObjectMapper().writeValueAsString(body));
+        response.addHeader(HEADER_AUTHORIZATION, PREFIX_TOKEN + accessToken);
+    }
 
     @Override
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response,

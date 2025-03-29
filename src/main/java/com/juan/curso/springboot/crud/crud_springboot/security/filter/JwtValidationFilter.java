@@ -17,7 +17,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import com.fasterxml.jackson.core.type.TypeReference;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.jsonwebtoken.Claims;
@@ -32,7 +31,6 @@ public class JwtValidationFilter extends BasicAuthenticationFilter {
 
     public JwtValidationFilter(AuthenticationManager authenticationManager) {
         super(authenticationManager);
-
     }
 
     @Override
@@ -48,30 +46,32 @@ public class JwtValidationFilter extends BasicAuthenticationFilter {
         String token = header.replace(PREFIX_TOKEN, "");
 
         try {
-            Claims claims = Jwts.parser().verifyWith(SECRET_KEY).build().parseSignedClaims(token).getPayload();
+            Claims claims = Jwts.parser().setSigningKey(SECRET_KEY).build().parseClaimsJws(token).getBody();
             String email = claims.getSubject();
 
             // Obtener el campo "authorities" del token
             Object authoritiesClaims = claims.get("authorities");
 
-            // Convertir el campo "authorities" a una lista de strings
-            ObjectMapper objectMapper = new ObjectMapper();
-            List<String> authoritiesList = objectMapper.convertValue(authoritiesClaims,
-                    new TypeReference<List<String>>() {
-                    });
+            // Verificar si "authorities" es nulo o vacío antes de procesarlo
+            List<String> authoritiesList = null;
+            if (authoritiesClaims != null) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                authoritiesList = objectMapper.convertValue(authoritiesClaims, new TypeReference<List<String>>() {});
+            }
 
-            // Convertir la lista de strings a una lista de GrantedAuthority
-            Collection<? extends GrantedAuthority> authorities = authoritiesList.stream()
-                    .map(SimpleGrantedAuthority::new)
-                    .collect(Collectors.toList());
+            // Si authoritiesList no es null ni vacío, convertirla a GrantedAuthority
+            Collection<? extends GrantedAuthority> authorities = (authoritiesList != null && !authoritiesList.isEmpty())
+                    ? authoritiesList.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList())
+                    : null;
 
             // Crear el objeto de autenticación
             UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-                    email, null, authorities);
+                    email, null, authorities != null ? authorities : List.of());
 
             // Establecer la autenticación en el contexto de seguridad
             SecurityContextHolder.getContext().setAuthentication(authenticationToken);
             chain.doFilter(request, response);
+
         } catch (JwtException e) {
             Map<String, String> body = new HashMap<>();
             body.put("error", e.getMessage());
@@ -81,6 +81,5 @@ public class JwtValidationFilter extends BasicAuthenticationFilter {
             response.setStatus(HttpStatus.UNAUTHORIZED.value());
             response.setContentType(CONTENT_TYPE);
         }
-
     }
 }
