@@ -4,6 +4,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.juan.curso.springboot.crud.crud_springboot.repositories.RoleRepository;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +24,7 @@ import com.juan.curso.springboot.crud.crud_springboot.dto.PasswordResetRequestDt
 import com.juan.curso.springboot.crud.crud_springboot.entities.User;
 import com.juan.curso.springboot.crud.crud_springboot.services.CaptchaService;
 import com.juan.curso.springboot.crud.crud_springboot.services.UserService;
+import  com.juan.curso.springboot.crud.crud_springboot.security.JwtTokenUtil;
 
 import jakarta.validation.Valid;
 
@@ -33,6 +38,13 @@ public class UserController {
 
     @Autowired
     private CaptchaService captchaService;
+
+    @Autowired
+    private JwtTokenUtil jwtTokenUtil;
+
+
+    @Autowired
+    private RoleRepository roleRepository;
 
     @GetMapping
     public List<User> list() {
@@ -70,10 +82,46 @@ public class UserController {
     }
 
     @PostMapping("/refresh-token")
-    public ResponseEntity<?> refreshToken(@RequestBody Map<String, String> request) {
+    public ResponseEntity<?> refreshToken(@RequestBody Map<String, String> request,
+                                          HttpServletResponse response) {
+        String refreshToken = request.get("refreshToken");
 
-        return new ResponseEntity<>(HttpStatus.OK);
+        if (refreshToken == null || refreshToken.isEmpty()) {
+            return ResponseEntity.badRequest().body("Refresh token is required");
+        }
+
+        try {
+            Claims claims = jwtTokenUtil.parseToken(refreshToken);
+
+            // Verificar que sea un refresh token
+            if (!"refresh".equals(claims.get("token_type"))) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Invalid token type");
+            }
+
+            String email = claims.getSubject();
+
+            // Obtener los roles del usuario de la base de datos (puedes usar el roleRepository)
+            List<String> roles = roleRepository.findRolesByEmail(email); // O tu método para obtener roles
+
+            // Generar el nuevo access token con los roles
+            String newAccessToken = jwtTokenUtil.generateAccessToken(email, roles);
+
+            // Opcionalmente generar un nuevo refresh token
+            // String newRefreshToken = jwtTokenUtil.generateRefreshToken(email);
+
+            // Crear respuesta con el nuevo access token (y el refresh token si lo generas)
+            Map<String, String> tokens = new HashMap<>();
+            tokens.put("accessToken", newAccessToken);
+            // tokens.put("refreshToken", newRefreshToken); // Si decides incluir el refresh token
+
+            return ResponseEntity.ok(tokens);
+
+        } catch (JwtException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Invalid refresh token");
+        }
     }
+
+
 
     @GetMapping("/verifyEmail")
     public String verifyEmail(@RequestParam("token") String token) {

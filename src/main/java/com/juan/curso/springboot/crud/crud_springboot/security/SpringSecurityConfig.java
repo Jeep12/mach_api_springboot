@@ -53,7 +53,7 @@ public class SpringSecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/users/reset-password").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users/verifyEmail").permitAll() // Permitir acceso a la ruta de verificación
                         .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/{id}").permitAll()//hasAnyRole("ADMIN", "USER")
-                        .requestMatchers(HttpMethod.POST, "/api/products").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/products").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/products/{id}").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/products/{id}").hasRole("ADMIN")
                         .anyRequest().authenticated())
@@ -68,10 +68,36 @@ public class SpringSecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(Arrays.asList("*"));
-        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
-        config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
+
+        // Especificar los orígenes permitidos explícitamente (mejor que "*")
+        config.setAllowedOrigins(Arrays.asList(
+                "http://localhost:4200",  // Desarrollo Angular
+                "https://tudominio.com"   // Producción
+        ));
+
+        // Métodos HTTP permitidos
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+
+        // Cabeceras permitidas
+        config.setAllowedHeaders(Arrays.asList(
+                "Authorization",
+                "Content-Type",
+                "Accept",
+                "X-Requested-With",
+                "Cache-Control"
+        ));
+
+        // Cabeceras expuestas al cliente
+        config.setExposedHeaders(Arrays.asList(
+                "Authorization",
+                "Content-Disposition"
+        ));
+
+        // Permitir credenciales (necesario para cookies/tokens)
         config.setAllowCredentials(true);
+
+        // Tiempo máximo de caché para preflight requests
+        config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
@@ -79,12 +105,16 @@ public class SpringSecurityConfig {
         return source;
     }
 
+
     @Bean
     FilterRegistrationBean<CorsFilter> corsFilter() {
-        FilterRegistrationBean<CorsFilter> corsBean = new FilterRegistrationBean<>(new CorsFilter(corsConfigurationSource()));
+        FilterRegistrationBean<CorsFilter> corsBean = new FilterRegistrationBean<>(
+                new CorsFilter(corsConfigurationSource())
+        );
         corsBean.setOrder(Ordered.HIGHEST_PRECEDENCE);
         return corsBean;
-
     }
+
+
 
 }
