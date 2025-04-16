@@ -1,15 +1,17 @@
 package com.juan.curso.springboot.crud.crud_springboot.controllers;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import com.juan.curso.springboot.crud.crud_springboot.dto.UserDto;
 import com.juan.curso.springboot.crud.crud_springboot.dto.UserRequestDto;
 import com.juan.curso.springboot.crud.crud_springboot.dto.UserRolesRequest;
+import com.juan.curso.springboot.crud.crud_springboot.entities.ActiveToken;
+import com.juan.curso.springboot.crud.crud_springboot.repositories.ActiveTokenRepository;
 import com.juan.curso.springboot.crud.crud_springboot.repositories.RoleRepository;
+import com.juan.curso.springboot.crud.crud_springboot.repositories.UserRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -26,6 +28,8 @@ import org.springframework.security.core.Authentication;
 
 import jakarta.validation.Valid;
 
+import static com.juan.curso.springboot.crud.crud_springboot.security.config.TokenJwtConfig.ACCESS_TOKEN_EXPIRATION;
+
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
@@ -39,6 +43,11 @@ public class UserController {
     @Autowired
     private JwtTokenUtil jwtTokenUtil;
 
+    @Autowired
+    private ActiveTokenRepository activeTokenRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
     private RoleRepository roleRepository;
@@ -47,7 +56,6 @@ public class UserController {
     public List<UserDto> list() {
         return service.findAll();
     }
-
 
 
     @PostMapping
@@ -108,13 +116,27 @@ public class UserController {
             // Generar el nuevo access token con los roles
             String newAccessToken = jwtTokenUtil.generateAccessToken(email, roles);
 
-            // Opcionalmente generar un nuevo refresh token
-            // String newRefreshToken = jwtTokenUtil.generateRefreshToken(email);
+            // Eliminar el viejo access token del usuario (si lo deseas)
+            Optional<User> optionalUser = userRepository.findByEmail(email);
+            if (optionalUser.isPresent()) {
+                activeTokenRepository.deleteOldTokensByUserId(optionalUser.get().getId());
+            }
 
-            // Crear respuesta con el nuevo access token (y el refresh token si lo generas)
+            // Guardar el nuevo access token en la base de datos
+            ActiveToken newActiveToken = new ActiveToken();
+            Optional<User> user = userRepository.findByEmail(email);  // Obtienes al usuario por su email
+            if (user.isPresent()) {
+                newActiveToken.setToken(newAccessToken);  // Guardar el nuevo access token
+                newActiveToken.setUser(user.get());
+                newActiveToken.setCreatedAt(new Date());
+                newActiveToken.setExpiresAt(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION));  // Establecer su fecha de expiración
+                activeTokenRepository.save(newActiveToken);  // Guarda el nuevo access token
+            }
+
+            // Crear respuesta con el nuevo access token
             Map<String, String> tokens = new HashMap<>();
             tokens.put("accessToken", newAccessToken);
-            // tokens.put("refreshToken", newRefreshToken); // Si decides incluir el refresh token
+            tokens.put("refreshToken", refreshToken);  // Mantener el mismo refresh token, si el frontend lo necesita
 
             return ResponseEntity.ok(tokens);
 
@@ -122,7 +144,6 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Invalid refresh token");
         }
     }
-
 
 
     @GetMapping("/verifyEmail")
@@ -193,6 +214,7 @@ public class UserController {
 
         return ResponseEntity.ok(response);
     }
+
     @DeleteMapping("/delete-user")
     public ResponseEntity<Map<String, String>> deleteUserById(@RequestBody Map<String, Long> request) {
         Long userId = request.get("id");
@@ -205,8 +227,14 @@ public class UserController {
     }
 
     @PutMapping("/change-roles")
-    public ResponseEntity<Map<String, Object>> updateUserRoles(@RequestBody UserRolesRequest request) {
+    public ResponseEntity<Map<String, Object>> updateUserRoles(
+            @RequestBody UserRolesRequest request,
+            HttpServletRequest httpRequest) {
+
+
         Map<String, Object> response = service.updateUserRoles(request.getId(), request.getRoles());
+
         return ResponseEntity.status((Integer) response.get("status")).body(response);
     }
+
 }

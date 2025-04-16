@@ -4,6 +4,10 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.juan.curso.springboot.crud.crud_springboot.entities.ActiveToken;
+import com.juan.curso.springboot.crud.crud_springboot.repositories.ActiveTokenRepository;
+import com.juan.curso.springboot.crud.crud_springboot.repositories.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -24,12 +28,23 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import static com.juan.curso.springboot.crud.crud_springboot.security.config.TokenJwtConfig.*;
 
+
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
     private AuthenticationManager authenticationManager;
 
-    public JwtAuthenticationFilter(AuthenticationManager authenticationManager) {
+    private final ActiveTokenRepository activeTokenRepository;
+    private final UserRepository userRepository;
+
+    public JwtAuthenticationFilter(
+            AuthenticationManager authenticationManager,
+            ActiveTokenRepository activeTokenRepository,
+            UserRepository userRepository
+    ) {
         this.authenticationManager = authenticationManager;
+        this.activeTokenRepository = activeTokenRepository;
+        this.userRepository = userRepository;
+        setFilterProcessesUrl("/login"); // Configura la URL de login
     }
 
 
@@ -67,6 +82,7 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
                 (org.springframework.security.core.userdetails.User) authResult.getPrincipal();
 
         String email = userDetails.getUsername();
+        Optional<User> optionalUser = userRepository.findByEmail(email);  // Devuelve un Optional<User>
 
         Collection<? extends GrantedAuthority> roles = authResult.getAuthorities();
 
@@ -97,6 +113,26 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
                 .expiration(new Date(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRATION))
                 .signWith(SECRET_KEY)
                 .compact();
+
+        ActiveToken activeToken = new ActiveToken();
+
+        if (optionalUser.isPresent()) {
+            activeTokenRepository.deleteOldTokensByUserId(optionalUser.get().getId());
+
+            activeToken.setToken(accessToken);
+            activeToken.setUser(optionalUser.get());
+            activeToken.setCreatedAt(new Date());  // Establecer la fecha de creación
+            activeToken.setExpiresAt(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION));
+            activeTokenRepository.save(activeToken);  // Guardamos el ActiveToken con el usuario asociado
+
+
+        } else {
+            // Maneja el caso donde el usuario no está presente (por ejemplo, devolver un error)
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("Usuario no encontrado.");
+            return;
+        }
+
 
         // Respuesta
         Map<String, String> body = new HashMap<>();

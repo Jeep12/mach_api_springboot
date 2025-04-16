@@ -23,11 +23,20 @@ public class ActiveToken {
     @Temporal(TemporalType.TIMESTAMP)
     private Date createdAt;
 
+    @Column(name = "expires_at")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date expiresAt;
+
+
+
+
+
     @PrePersist
     public void prePersist() {
         this.createdAt = new Date();
+        // Aquí puedes agregar la fecha de expiración, por ejemplo 1 hora después de la creación
+        this.expiresAt = new Date(System.currentTimeMillis() + 3600000); // 1 hora en milisegundos
     }
-
     public Long getId() {
         return id;
     }
@@ -58,5 +67,13 @@ public class ActiveToken {
 
     public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Date getExpiresAt() {
+        return expiresAt;
+    }
+
+    public void setExpiresAt(Date expiresAt) {
+        this.expiresAt = expiresAt;
     }
 }

@@ -1,9 +1,13 @@
 package com.juan.curso.springboot.crud.crud_springboot.services;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import com.juan.curso.springboot.crud.crud_springboot.dto.UserDto;
+import com.juan.curso.springboot.crud.crud_springboot.entities.ActiveToken;
+import com.juan.curso.springboot.crud.crud_springboot.repositories.ActiveTokenRepository;
 import com.juan.curso.springboot.crud.crud_springboot.utils.EmailContent;
+import com.juan.curso.springboot.crud.crud_springboot.utils.JwtTokenUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -39,6 +43,13 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private EmailContent emailContent;
+
+    @Autowired
+    private JwtTokenUtil jwtTokenUtil;
+
+    @Autowired
+    private ActiveTokenRepository activeTokenRepository;
+
 
     @Override
     @Transactional(readOnly = true)
@@ -326,11 +337,27 @@ public class UserServiceImpl implements UserService {
         roleRepository.save(newRole);
         repository.save(user);
 
-        // Respuesta exitosa (sin incluir el DTO)
+        // Eliminar el token antiguo de la tabla ActiveToken
+        activeTokenRepository.deleteOldTokensByUserId(user.getId());  // Elimina los tokens viejos del usuario
+
+        // Generar un nuevo token JWT con los roles actualizados
+        String newToken = jwtTokenUtil.generateAccessToken(user.getEmail(), user.getRoles().stream().map(Role::getName).collect(Collectors.toList()));
+
+        // Crear el nuevo ActiveToken para el usuario con el nuevo token generado
+        ActiveToken activeToken = new ActiveToken();
+        activeToken.setToken(newToken);
+        activeToken.setUser(user);
+
+        // Guardar el nuevo token en la base de datos
+        activeTokenRepository.save(activeToken);
+
+        // Respuesta exitosa
         response.put("success", true);
         response.put("message", "Rol actualizado exitosamente");
         response.put("status", HttpStatus.OK.value());
 
         return response;
     }
+
+
 }

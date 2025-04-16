@@ -3,12 +3,11 @@ package com.juan.curso.springboot.crud.crud_springboot.security.filter;
 import static com.juan.curso.springboot.crud.crud_springboot.security.config.TokenJwtConfig.*;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import com.juan.curso.springboot.crud.crud_springboot.entities.ActiveToken;
+import com.juan.curso.springboot.crud.crud_springboot.repositories.ActiveTokenRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -29,10 +28,13 @@ import jakarta.servlet.http.HttpServletResponse;
 
 public class JwtValidationFilter extends BasicAuthenticationFilter {
 
-    public JwtValidationFilter(AuthenticationManager authenticationManager) {
-        super(authenticationManager);
-    }
+    private final ActiveTokenRepository activeTokenRepository;
 
+    public JwtValidationFilter(AuthenticationManager authenticationManager, ActiveTokenRepository activeTokenRepository) {
+        super(authenticationManager);
+        this.activeTokenRepository = activeTokenRepository;
+
+    }
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
@@ -46,33 +48,64 @@ public class JwtValidationFilter extends BasicAuthenticationFilter {
             chain.doFilter(request, response);
             return;
         }
+
         String token = header.replace(PREFIX_TOKEN, "");
 
         try {
+            // Verificar si el token está presente en la base de datos
+            if (!activeTokenRepository.existsByToken(token)) {
+                response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                response.setContentType(CONTENT_TYPE);
+                Map<String, String> body = new HashMap<>();
+                body.put("error", "Token no encontrado");
+                body.put("message", "Este token no está activo");
+                response.getWriter().write(new ObjectMapper().writeValueAsString(body));
+                return;
+            }
+
+            // Obtener los datos del token
             Claims claims = Jwts.parser().setSigningKey(SECRET_KEY).build().parseClaimsJws(token).getBody();
             String email = claims.getSubject();
 
-            // Obtener el campo "authorities" del token
-            Object authoritiesClaims = claims.get("authorities");
+            // Verificar la caducidad del token (exp en JWT)
+            Date expirationDate = claims.getExpiration();
+            if (expirationDate.before(new Date())) {
+                response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                response.setContentType(CONTENT_TYPE);
+                Map<String, String> body = new HashMap<>();
+                body.put("error", "Token expirado");
+                body.put("message", "El token ha expirado");
+                response.getWriter().write(new ObjectMapper().writeValueAsString(body));
+                return;
+            }
 
-            // Verificar si "authorities" es nulo o vacío antes de procesarlo
+            // Verificar si el token ha expirado en la base de datos
+            ActiveToken activeToken = activeTokenRepository.findByToken(token);
+            if (activeToken != null && activeToken.getExpiresAt().before(new Date())) {
+                response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                response.setContentType(CONTENT_TYPE);
+                Map<String, String> body = new HashMap<>();
+                body.put("error", "Token caducado");
+                body.put("message", "Este token ha caducado");
+                response.getWriter().write(new ObjectMapper().writeValueAsString(body));
+                return;
+            }
+
+            // Si todo es válido, sigue con el proceso de autenticación
+            Object authoritiesClaims = claims.get("authorities");
             List<String> authoritiesList = null;
             if (authoritiesClaims != null) {
                 ObjectMapper objectMapper = new ObjectMapper();
-                authoritiesList = objectMapper.convertValue(authoritiesClaims, new TypeReference<List<String>>() {
-                });
+                authoritiesList = objectMapper.convertValue(authoritiesClaims, new TypeReference<List<String>>() {});
             }
 
-            // Si authoritiesList no es null ni vacío, convertirla a GrantedAuthority
             Collection<? extends GrantedAuthority> authorities = (authoritiesList != null && !authoritiesList.isEmpty())
                     ? authoritiesList.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList())
-                    : null;
+                    : List.of();
 
-            // Crear el objeto de autenticación
             UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-                    email, null, authorities != null ? authorities : List.of());
+                    email, null, authorities);
 
-            // Establecer la autenticación en el contexto de seguridad
             SecurityContextHolder.getContext().setAuthentication(authenticationToken);
             chain.doFilter(request, response);
 
@@ -86,4 +119,6 @@ public class JwtValidationFilter extends BasicAuthenticationFilter {
             response.setContentType(CONTENT_TYPE);
         }
     }
+
+
 }

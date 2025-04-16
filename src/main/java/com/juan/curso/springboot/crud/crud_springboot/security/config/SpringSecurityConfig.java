@@ -2,6 +2,8 @@ package com.juan.curso.springboot.crud.crud_springboot.security.config;
 
 import java.util.Arrays;
 
+import com.juan.curso.springboot.crud.crud_springboot.repositories.ActiveTokenRepository;
+import com.juan.curso.springboot.crud.crud_springboot.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -34,6 +36,13 @@ public class SpringSecurityConfig {
     @Autowired
     private AuthenticationConfiguration authenticationConfiguration;
 
+    @Autowired
+    private ActiveTokenRepository activeTokenRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+
     @Bean
     AuthenticationManager authenticationManager() throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
@@ -55,7 +64,7 @@ public class SpringSecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/users/delete-user").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/users/refresh-token").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users/toggle-status").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/users/change-roles").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/users/change-roles").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/users/forgot-password").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users/reset-password").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users/verifyEmail").permitAll() // Permitir acceso a la ruta de verificación
@@ -64,8 +73,8 @@ public class SpringSecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/products/{id}").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/products/{id}").hasRole("ADMIN")
                         .anyRequest().authenticated())
-                .addFilter(new JwtAuthenticationFilter(authenticationManager()))
-                .addFilter(new JwtValidationFilter(authenticationManager()))
+                .addFilter(new JwtAuthenticationFilter(authenticationManager(), activeTokenRepository, userRepository))
+                .addFilter(new JwtValidationFilter(authenticationManager(),activeTokenRepository))
                 .csrf(config -> config.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
