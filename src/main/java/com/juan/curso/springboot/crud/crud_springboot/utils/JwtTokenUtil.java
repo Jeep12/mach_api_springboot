@@ -1,4 +1,4 @@
-package com.juan.curso.springboot.crud.crud_springboot.security;
+package com.juan.curso.springboot.crud.crud_springboot.utils;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -9,7 +9,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import static com.juan.curso.springboot.crud.crud_springboot.security.TokenJwtConfig.*;
+import static com.juan.curso.springboot.crud.crud_springboot.security.config.TokenJwtConfig.*;
 
 @Component
 public class JwtTokenUtil {

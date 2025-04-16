@@ -41,6 +41,7 @@ public class JpaUserDetailsService implements UserDetailsService {
                 user.getEmail(),
                 user.getPassword(),
                 user.isEnabled(),
+
                 true,
                 true,
                 true,

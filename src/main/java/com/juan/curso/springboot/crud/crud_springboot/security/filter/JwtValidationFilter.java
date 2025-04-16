@@ -1,6 +1,6 @@
 package com.juan.curso.springboot.crud.crud_springboot.security.filter;
 
-import static com.juan.curso.springboot.crud.crud_springboot.security.TokenJwtConfig.*;
+import static com.juan.curso.springboot.crud.crud_springboot.security.config.TokenJwtConfig.*;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -34,7 +34,10 @@ public class JwtValidationFilter extends BasicAuthenticationFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain chain)
             throws IOException, ServletException {
 
         String header = request.getHeader(HEADER_AUTHORIZATION);
@@ -56,7 +59,8 @@ public class JwtValidationFilter extends BasicAuthenticationFilter {
             List<String> authoritiesList = null;
             if (authoritiesClaims != null) {
                 ObjectMapper objectMapper = new ObjectMapper();
-                authoritiesList = objectMapper.convertValue(authoritiesClaims, new TypeReference<List<String>>() {});
+                authoritiesList = objectMapper.convertValue(authoritiesClaims, new TypeReference<List<String>>() {
+                });
             }
 
             // Si authoritiesList no es null ni vacío, convertirla a GrantedAuthority

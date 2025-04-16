@@ -1,4 +1,4 @@
-package com.juan.curso.springboot.crud.crud_springboot;
+package com.juan.curso.springboot.crud.crud_springboot.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

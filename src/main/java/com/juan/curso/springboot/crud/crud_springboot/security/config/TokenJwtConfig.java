@@ -1,4 +1,4 @@
-package com.juan.curso.springboot.crud.crud_springboot.security;
+package com.juan.curso.springboot.crud.crud_springboot.security.config;
 
 import javax.crypto.SecretKey;
 

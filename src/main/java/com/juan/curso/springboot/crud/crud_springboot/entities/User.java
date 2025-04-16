@@ -8,20 +8,7 @@ import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
-import jakarta.persistence.Transient;
-import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -74,22 +61,43 @@ public class User {
     private Date passwordResetExpiration;
 
 
-    // Nuevo campo para la fecha de creación
-    @Column(nullable = true)
+    @Column(name = "created_at", nullable = true, updatable = false)
     @Temporal(TemporalType.TIMESTAMP)
     private Date createdAt;
 
-    @JsonIgnoreProperties({ "users" })
+    @Column(name = "updated_at", nullable = true)
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date updatedAt;
+
+
+    @JsonIgnoreProperties({"users"})
     @ManyToMany
-    @JoinTable(name = "users_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"), uniqueConstraints = {
-            @UniqueConstraint(columnNames = { "user_id", "role_id" }) })
-    private List<Role> roles;
+    @JoinTable(
+            name = "users_roles",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id"),
+            uniqueConstraints = {
+                    @UniqueConstraint(columnNames = {"user_id", "role_id"})
+            }
+    )
+    private List<Role> roles = new ArrayList<>();
 
     public User() {
         this.roles = new ArrayList<>();
     }
 
-    // Getter and Setter methods for new fields
+    @PrePersist
+    public void prePersist() {
+        this.enabled = true;
+        this.createdAt = new Date();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = new Date();
+    }
+
+
     public String getVerificationToken() {
         return verificationToken;
     }
@@ -128,11 +136,6 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
-    }
-
-    @PrePersist
-    public void PrePersist() {
-        enabled = true;
     }
 
     public boolean isEnabled() {
@@ -176,14 +179,20 @@ public class User {
     }
 
     public boolean isAdmin() {
-        return admin;
+        for (Role role : this.roles) {
+            if (role.getName().equals("ROLE_ADMIN")) {
+                return true;
+            }
+        }
+        return false;
     }
+
 
     public void setAdmin(boolean admin) {
         this.admin = admin;
     }
 
-        
+
     public String getPasswordResetToken() {
         return passwordResetToken;
     }
@@ -237,5 +246,17 @@ public class User {
         } else if (!email.equals(other.email))
             return false;
         return true;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder result = new StringBuilder();
+
+        result.append("Name: " + this.getName());
+        result.append("Lastname: " + this.getLastname());
+        result.append("Email: " + this.getEmail());
+        result.append("Is admin: " + this.isAdmin());
+        result.append("Is verified: " + this.isEmailVerified());
+        return result.toString();
     }
 }

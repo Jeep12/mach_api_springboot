@@ -1,8 +1,9 @@
-package com.juan.curso.springboot.crud.crud_springboot.security;
+package com.juan.curso.springboot.crud.crud_springboot.security.config;
 
 import java.util.Arrays;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,7 +11,6 @@ import org.springframework.core.Ordered;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -28,6 +28,9 @@ import com.juan.curso.springboot.crud.crud_springboot.security.filter.JwtValidat
 //@EnableMethodSecurity(prePostEnabled = true)
 public class SpringSecurityConfig {
 
+    @Value("${frontend.url.config}")
+    private String url;
+
     @Autowired
     private AuthenticationConfiguration authenticationConfiguration;
 
@@ -41,6 +44,7 @@ public class SpringSecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http.authorizeHttpRequests((authz) -> authz
@@ -48,7 +52,10 @@ public class SpringSecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/login").permitAll() // Permite acceso a /login
                         .requestMatchers(HttpMethod.POST, "/api/users/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/users/delete-user").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/users/refresh-token").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/users/toggle-status").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/users/change-roles").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/users/forgot-password").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users/reset-password").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users/verifyEmail").permitAll() // Permitir acceso a la ruta de verificación
@@ -71,8 +78,7 @@ public class SpringSecurityConfig {
 
         // Especificar los orígenes permitidos explícitamente (mejor que "*")
         config.setAllowedOrigins(Arrays.asList(
-                "http://localhost:4200",  // Desarrollo Angular
-                "https://tudominio.com"   // Producción
+                this.url
         ));
 
         // Métodos HTTP permitidos
@@ -114,7 +120,6 @@ public class SpringSecurityConfig {
         corsBean.setOrder(Ordered.HIGHEST_PRECEDENCE);
         return corsBean;
     }
-
 
 
 }

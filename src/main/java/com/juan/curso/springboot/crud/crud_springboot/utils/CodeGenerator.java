@@ -1,4 +1,4 @@
-package com.juan.curso.springboot.crud.crud_springboot.helpers;
+package com.juan.curso.springboot.crud.crud_springboot.utils;
 
 import java.security.SecureRandom;
 

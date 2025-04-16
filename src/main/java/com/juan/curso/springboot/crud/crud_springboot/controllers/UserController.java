@@ -4,6 +4,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.juan.curso.springboot.crud.crud_springboot.dto.UserDto;
+import com.juan.curso.springboot.crud.crud_springboot.dto.UserRequestDto;
+import com.juan.curso.springboot.crud.crud_springboot.dto.UserRolesRequest;
 import com.juan.curso.springboot.crud.crud_springboot.repositories.RoleRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -12,23 +15,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.juan.curso.springboot.crud.crud_springboot.dto.PasswordResetRequestDto;
 import com.juan.curso.springboot.crud.crud_springboot.entities.User;
 import com.juan.curso.springboot.crud.crud_springboot.services.CaptchaService;
 import com.juan.curso.springboot.crud.crud_springboot.services.UserService;
-import  com.juan.curso.springboot.crud.crud_springboot.security.JwtTokenUtil;
+import com.juan.curso.springboot.crud.crud_springboot.utils.JwtTokenUtil;
+import org.springframework.security.core.Authentication;
 
 import jakarta.validation.Valid;
 
-@CrossOrigin(origins = {"http://localhost:4200"})
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
@@ -47,16 +44,14 @@ public class UserController {
     private RoleRepository roleRepository;
 
     @GetMapping
-    public List<User> list() {
+    public List<UserDto> list() {
         return service.findAll();
     }
 
 
 
-    // @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<?> create(@Valid @RequestBody User user, BindingResult result) {
-
         if (result.hasFieldErrors()) {
             return validation(result);
         }
@@ -64,12 +59,12 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody User user, BindingResult result,
+    public ResponseEntity<?> register(@Valid @RequestBody UserRequestDto userRequestDto,
+                                      BindingResult result,
                                       @RequestParam("captchaToken") String captchaToken) {
 
-        boolean isCaptchaValid = captchaService.verifyCaptcha(captchaToken);
-
-        if (!isCaptchaValid) {
+        // Validar CAPTCHA primero
+        if (!captchaService.verifyCaptcha(captchaToken)) {
             return ResponseEntity.badRequest().body("Captcha validation failed.");
         }
 
@@ -77,7 +72,14 @@ public class UserController {
             return validation(result);
         }
 
-        user.setAdmin(false);
+        // Convertir DTO a Entidad
+        User user = new User();
+        user.setName(userRequestDto.getName());
+        user.setLastname(userRequestDto.getLastname());
+        user.setEmail(userRequestDto.getEmail());
+        user.setPassword(userRequestDto.getPassword()); // La encriptación se hará en el servicio
+        user.setAdmin(false); // Valor por defecto
+
         return create(user, result);
     }
 
@@ -164,9 +166,7 @@ public class UserController {
         // Obtener los valores del Map
         String tokenUser = request.get("tokenUser");
         String password = request.get("password");
-        System.out.println("\n");
-        System.out.println("password" +password);
-        System.out.println("tokenUser" +tokenUser);
+
         // Verificar captcha
         boolean isCaptchaValid = captchaService.verifyCaptcha(captchaToken);
         if (!isCaptchaValid) {
@@ -183,4 +183,30 @@ public class UserController {
     }
 
 
+    @PutMapping("/toggle-status")
+    public ResponseEntity<Map<String, String>> toggleUserStatus(@RequestBody Map<String, Long> request) {
+        Long userId = request.get("id");
+        boolean enabled = service.toggleUserStatus(userId);
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", enabled ? "Usuario habilitado" : "Usuario deshabilitado");
+
+        return ResponseEntity.ok(response);
+    }
+    @DeleteMapping("/delete-user")
+    public ResponseEntity<Map<String, String>> deleteUserById(@RequestBody Map<String, Long> request) {
+        Long userId = request.get("id");
+
+        // Llamar al servicio para eliminar el usuario
+        Map<String, String> response = service.deleteUserById(userId);
+
+        // Siempre devolver 200 OK, el mensaje varía según el resultado
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/change-roles")
+    public ResponseEntity<Map<String, Object>> updateUserRoles(@RequestBody UserRolesRequest request) {
+        Map<String, Object> response = service.updateUserRoles(request.getId(), request.getRoles());
+        return ResponseEntity.status((Integer) response.get("status")).body(response);
+    }
 }

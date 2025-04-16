@@ -3,6 +3,7 @@ package com.juan.curso.springboot.crud.crud_springboot.entities;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.Column;
@@ -26,6 +27,8 @@ public class Role {
 
     @JsonIgnoreProperties({"roles","handler","hibernateLazyInitializer"})
     @ManyToMany(mappedBy = "roles")
+    @JsonIgnore
+
     private List<User> users;
 
     public Role() {
