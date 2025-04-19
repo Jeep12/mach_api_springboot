@@ -80,7 +80,7 @@ public class UserController {
             return validation(result);
         }
 
-        // Convertir DTO a Entidad
+        // creo un usuario con los objetos del DTO (request)
         User user = new User();
         user.setName(userRequestDto.getName());
         user.setLastname(userRequestDto.getLastname());
@@ -94,8 +94,11 @@ public class UserController {
     @PostMapping("/refresh-token")
     public ResponseEntity<?> refreshToken(@RequestBody Map<String, String> request,
                                           HttpServletResponse response) {
+
+        //Obtengo el refresh token de la request
         String refreshToken = request.get("refreshToken");
 
+        //si es nulo o esta vacio mando bad request
         if (refreshToken == null || refreshToken.isEmpty()) {
             return ResponseEntity.badRequest().body("Refresh token is required");
         }
@@ -103,26 +106,27 @@ public class UserController {
         try {
             Claims claims = jwtTokenUtil.parseToken(refreshToken);
 
-            // Verificar que sea un refresh token
+            // Verifico que sea un refresh token (en el payload esta el token_type)
             if (!"refresh".equals(claims.get("token_type"))) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Invalid token type");
             }
 
+            //Obtengo el email del body
             String email = claims.getSubject();
 
-            // Obtener los roles del usuario de la base de datos (puedes usar el roleRepository)
+            // Obtengo los roles del usuario
             List<String> roles = roleRepository.findRolesByEmail(email); // O tu método para obtener roles
 
-            // Generar el nuevo access token con los roles
+            // Genero un nuevo access token con los roles
             String newAccessToken = jwtTokenUtil.generateAccessToken(email, roles);
 
-            // Eliminar el viejo access token del usuario (si lo deseas)
+            // Elimino el viejo token de la tabla active tokens
             Optional<User> optionalUser = userRepository.findByEmail(email);
             if (optionalUser.isPresent()) {
                 activeTokenRepository.deleteOldTokensByUserId(optionalUser.get().getId());
             }
 
-            // Guardar el nuevo access token en la base de datos
+            // Guardo el nuevo access token en la tabla active_tokens
             ActiveToken newActiveToken = new ActiveToken();
             Optional<User> user = userRepository.findByEmail(email);  // Obtienes al usuario por su email
             if (user.isPresent()) {
@@ -133,7 +137,7 @@ public class UserController {
                 activeTokenRepository.save(newActiveToken);  // Guarda el nuevo access token
             }
 
-            // Crear respuesta con el nuevo access token
+            //Genero nueva respuesta con el nuevo token
             Map<String, String> tokens = new HashMap<>();
             tokens.put("accessToken", newAccessToken);
             tokens.put("refreshToken", refreshToken);  // Mantener el mismo refresh token, si el frontend lo necesita
@@ -165,7 +169,6 @@ public class UserController {
             @RequestBody PasswordResetRequestDto request,
             @RequestParam("captchaToken") String captchaToken) {
 
-        // Verificar captcha
         boolean isCaptchaValid = captchaService.verifyCaptcha(captchaToken);
         if (!isCaptchaValid) {
             Map<String, Object> response = new HashMap<>();
@@ -184,11 +187,10 @@ public class UserController {
             @RequestParam("captchaToken") String captchaToken,
             @RequestBody Map<String, String> request) {
 
-        // Obtener los valores del Map
+        // Obtengo los valores del Map
         String tokenUser = request.get("tokenUser");
         String password = request.get("password");
 
-        // Verificar captcha
         boolean isCaptchaValid = captchaService.verifyCaptcha(captchaToken);
         if (!isCaptchaValid) {
             Map<String, Object> response = new HashMap<>();
@@ -197,7 +199,6 @@ public class UserController {
             return ResponseEntity.badRequest().body(response);
         }
 
-        // Llamar al servicio para restablecer la contraseña
         Map<String, Object> response = service.resetPassword(tokenUser, password);
 
         return ResponseEntity.ok(response);
@@ -219,7 +220,6 @@ public class UserController {
     public ResponseEntity<Map<String, String>> deleteUserById(@RequestBody Map<String, Long> request) {
         Long userId = request.get("id");
 
-        // Llamar al servicio para eliminar el usuario
         Map<String, String> response = service.deleteUserById(userId);
 
         // Siempre devolver 200 OK, el mensaje varía según el resultado
@@ -236,5 +236,46 @@ public class UserController {
 
         return ResponseEntity.status((Integer) response.get("status")).body(response);
     }
+
+    @PostMapping("/resend-recovery-email")
+    public ResponseEntity<Map<String, Object>> resendRecoveryEmail(
+            @RequestBody Map<String, String> request,
+            @RequestParam("captchaToken") String captchaToken) {
+
+        if (!captchaService.verifyCaptcha(captchaToken)) {
+            Map<String, Object> captchaError = new HashMap<>();
+            captchaError.put("success", false);
+            captchaError.put("message", "Captcha validation failed.");
+            captchaError.put("expiresAt", 0);
+            captchaError.put("status", HttpStatus.BAD_REQUEST.value());
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(captchaError);
+        }
+
+
+        String email = request.get("email");
+
+        if (email == null || email.trim().isEmpty()) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "El email es requerido.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        }
+
+        email = email.trim();
+
+        // Llamada al servicio
+        Map<String, Object> response = service.resendRecoveryEmail(email);
+
+        // Validación de la respuesta del servicio
+        if (response.get("success") == null || !(Boolean) response.get("success")) {
+            return ResponseEntity.status(HttpStatus.valueOf((Integer) response.get("status")))
+                    .body(response);
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
 
 }

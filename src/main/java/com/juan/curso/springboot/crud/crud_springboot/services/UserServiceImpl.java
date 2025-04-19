@@ -1,5 +1,7 @@
 package com.juan.curso.springboot.crud.crud_springboot.services;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -271,22 +273,28 @@ public class UserServiceImpl implements UserService {
     public Map<String, Object> updateUserRoles(Long id, List<String> roleNames) {
         Map<String, Object> response = new HashMap<>();
 
-        // Validación básica - debe venir exactamente un rol
-        if (roleNames == null || roleNames.size() != 1) {
+        // Validación básica - debe venir al menos un rol
+        if (roleNames == null || roleNames.isEmpty()) {
             response.put("success", false);
-            response.put("message", "Debe proporcionar exactamente un rol");
+            response.put("message", "Debe proporcionar al menos un rol");
             response.put("status", HttpStatus.BAD_REQUEST.value());
             return response;
         }
 
-        String newRoleName = roleNames.get(0);
-
         // Validar roles permitidos
-        if (!"ROLE_USER".equals(newRoleName) && !"ROLE_ADMIN".equals(newRoleName)) {
-            response.put("success", false);
-            response.put("message", "Rol no válido. Solo se permiten ROLE_USER o ROLE_ADMIN");
-            response.put("status", HttpStatus.BAD_REQUEST.value());
-            return response;
+        List<String> validRoles = Arrays.asList("ROLE_USER", "ROLE_EMPLOYEE");
+        for (String roleName : roleNames) {
+            if (!validRoles.contains(roleName)) {
+                response.put("success", false);
+                response.put("message", "Rol no válido. Solo se permiten ROLE_USER o ROLE_EMPLOYEE");
+                response.put("status", HttpStatus.BAD_REQUEST.value());
+                return response;
+            }
+        }
+
+        // Asegurarse que ROLE_USER esté incluido
+        if (!roleNames.contains("ROLE_USER")) {
+            roleNames.add("ROLE_USER");
         }
 
         // Buscar usuario
@@ -299,62 +307,145 @@ public class UserServiceImpl implements UserService {
         }
         User user = userOpt.get();
 
-        // Verificar si ya tiene el rol solicitado
-        Optional<String> currentRole = user.getRoles().stream()
-                .findFirst()
-                .map(Role::getName);
-
-        if (currentRole.isPresent() && currentRole.get().equals(newRoleName)) {
+        // Verificar si ya tiene exactamente esos roles
+        List<String> currentRoles = user.getRoles().stream().map(Role::getName).collect(Collectors.toList());
+        if (new HashSet<>(currentRoles).equals(new HashSet<>(roleNames))) {
             response.put("success", false);
-            response.put("message", "El usuario ya tiene el rol " + newRoleName);
+            response.put("message", "El usuario ya tiene los roles asignados");
             response.put("status", HttpStatus.BAD_REQUEST.value());
             return response;
         }
 
-        // Obtener nuevo rol
-        Optional<Role> newRoleOpt = roleRepository.findByName(newRoleName);
-        if (newRoleOpt.isEmpty()) {
-            response.put("success", false);
-            response.put("message", "Rol no encontrado en la base de datos");
-            response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-            return response;
-        }
-        Role newRole = newRoleOpt.get();
-
-        // Manejo de la relación bidireccional
-        if (!user.getRoles().isEmpty()) {
-            Role oldRole = user.getRoles().get(0);
+        // Manejo de relación bidireccional: eliminar roles viejos
+        for (Role oldRole : user.getRoles()) {
             oldRole.getUsers().remove(user);
             roleRepository.save(oldRole);
         }
-
-        // Actualizar roles
         user.getRoles().clear();
-        user.getRoles().add(newRole);
-        newRole.getUsers().add(user);
+
+        // Asignar nuevos roles
+        for (String roleName : roleNames) {
+            Optional<Role> newRoleOpt = roleRepository.findByName(roleName);
+            if (newRoleOpt.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Rol " + roleName + " no encontrado en la base de datos");
+                response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+                return response;
+            }
+            Role role = newRoleOpt.get();
+            user.getRoles().add(role);
+            role.getUsers().add(user);
+            roleRepository.save(role);
+        }
 
         // Guardar cambios
-        roleRepository.save(newRole);
         repository.save(user);
 
-        // Eliminar el token antiguo de la tabla ActiveToken
-        activeTokenRepository.deleteOldTokensByUserId(user.getId());  // Elimina los tokens viejos del usuario
+        // Eliminar tokens viejos
+        activeTokenRepository.deleteOldTokensByUserId(user.getId());
 
-        // Generar un nuevo token JWT con los roles actualizados
-        String newToken = jwtTokenUtil.generateAccessToken(user.getEmail(), user.getRoles().stream().map(Role::getName).collect(Collectors.toList()));
+        // Generar token nuevo
+        String newToken = jwtTokenUtil.generateAccessToken(
+                user.getEmail(),
+                user.getRoles().stream().map(Role::getName).collect(Collectors.toList())
+        );
 
-        // Crear el nuevo ActiveToken para el usuario con el nuevo token generado
         ActiveToken activeToken = new ActiveToken();
         activeToken.setToken(newToken);
         activeToken.setUser(user);
-
-        // Guardar el nuevo token en la base de datos
         activeTokenRepository.save(activeToken);
 
         // Respuesta exitosa
         response.put("success", true);
-        response.put("message", "Rol actualizado exitosamente");
+        response.put("message", "Roles actualizados exitosamente");
         response.put("status", HttpStatus.OK.value());
+
+        return response;
+    }
+
+
+
+    public Map<String, Object> resendRecoveryEmail(String email) {
+        Map<String, Object> response = new HashMap<>();
+
+        // Verificamos si el usuario existe
+
+        System.out.println(email);
+        Optional<User> userOptional = repository.findByEmail(email);
+
+        if (userOptional.isEmpty()) {
+            // Si no existe, respondemos con un error
+            System.out.println(userOptional);
+            response.put("success", false);
+            response.put("message", "Usuario no encontrado");
+            response.put("expiresAt", 0);
+            response.put("status", HttpStatus.NOT_FOUND.value());
+            return response;
+        }
+
+        User user = userOptional.get();
+        Date now = new Date();
+        Date resetTokenExpiration = user.getPasswordResetExpiration();
+        long expiresAt = 0;
+
+        // Si tiene un token de recuperación ya, verificamos si ha expirado
+        if (resetTokenExpiration != null) {
+            expiresAt = resetTokenExpiration.getTime() - now.getTime();
+            if (expiresAt < 0) expiresAt = 0; // Si ya expiró, lo dejamos en 0
+        }
+
+        // Si el token aún es válido, no podemos enviar otro
+        if (resetTokenExpiration != null && resetTokenExpiration.after(now)) {
+            response.put("success", false);
+            response.put("message", "Ya se ha enviado un correo de recuperación. Espera a que expire.");
+            response.put("expiresAt", expiresAt);
+            response.put("status", HttpStatus.CONFLICT.value());
+            return response;
+        }
+
+        // Generar nuevo token de recuperación
+        String resetToken = CodeGenerator.generateVerificationCode();
+        user.setPasswordResetToken(resetToken);
+
+        // Establecer nueva expiración (por ejemplo 15 minutos)
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.MINUTE, 15);
+        user.setPasswordResetExpiration(calendar.getTime());
+
+        // Guardar el usuario con el nuevo token y expiración
+        try {
+            repository.save(user);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Hubo un error al guardar el usuario.");
+            response.put("error", e.getMessage());
+            response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+            return response;
+        }
+
+        // Componer el enlace de recuperación
+        String url = this.urlFrontEnd + "/reset-password?token=";
+        String resetLink = url + resetToken;
+
+        // Aquí creas el email y envíaslo
+        String subject = "Recuperación de Contraseña";
+        String body = emailContent.buildPasswordResetEmailBody(resetLink, user.getName(), user.getLastname());
+
+        try {
+            emailService.sendEmail(user.getEmail(), subject, body);
+            response.put("success", true);
+            response.put("message", "Se ha enviado el enlace de recuperación al correo.");
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Hubo un error al enviar el correo. Inténtelo más tarde.");
+            response.put("error", e.getMessage()); // Opcional para debugging
+            response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+            return response;
+        }
+
+        // Se devuelve el token y la expiración
+        response.put("token", resetToken);
+        response.put("expiration", user.getPasswordResetExpiration());
 
         return response;
     }

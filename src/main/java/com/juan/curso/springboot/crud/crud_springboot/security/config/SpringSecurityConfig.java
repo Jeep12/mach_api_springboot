@@ -57,7 +57,7 @@ public class SpringSecurityConfig {
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http.authorizeHttpRequests((authz) -> authz
-                        .requestMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/users").hasAnyRole("ADMIN","EMPLOYEE")
                         .requestMatchers(HttpMethod.POST, "/login").permitAll() // Permite acceso a /login
                         .requestMatchers(HttpMethod.POST, "/api/users/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users").hasRole("ADMIN")
@@ -65,6 +65,7 @@ public class SpringSecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/users/refresh-token").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users/toggle-status").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/users/change-roles").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/users/resend-recovery-email").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/users/forgot-password").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users/reset-password").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users/verifyEmail").permitAll() // Permitir acceso a la ruta de verificación

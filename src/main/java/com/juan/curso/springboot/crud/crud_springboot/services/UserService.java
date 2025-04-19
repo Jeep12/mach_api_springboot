@@ -17,5 +17,5 @@ public interface UserService {
     boolean toggleUserStatus(Long id);
     Map<String, String> deleteUserById(Long id);
     Map<String, Object> updateUserRoles(Long id, List<String> roleNames);
-
+    Map<String, Object> resendRecoveryEmail(String email);
 }
