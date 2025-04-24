@@ -32,7 +32,7 @@ public class UserServiceImpl implements UserService {
     private String urlFrontEnd;
 
     @Autowired
-    private UserRepository repository;
+    private UserRepository userRepository;
 
     @Autowired
     private RoleRepository roleRepository;
@@ -56,7 +56,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public List<UserDto> findAll() {
-        List<User> users = (List<User>) repository.findAll();
+        List<User> users = (List<User>) userRepository.findAll();
 
         List<UserDto> userDtos = new ArrayList<>();
         for (User user : users) {
@@ -72,7 +72,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public User save(User user) {
         // Validar email único
-        if (repository.existsByEmail(user.getEmail())) {
+        if (userRepository.existsByEmail(user.getEmail())) {
             throw new RuntimeException("El correo electrónico ya está registrado");
         }
 
@@ -107,17 +107,17 @@ public class UserServiceImpl implements UserService {
                 user.getLastname());
         emailService.sendEmail(user.getEmail(), subject, body);
 
-        return repository.save(user);
+        return userRepository.save(user);
     }
 
     @Override
     public boolean existsByEmail(String email) {
-        return repository.existsByEmail(email);
+        return userRepository.existsByEmail(email);
     }
 
     @Override
     public String verifyEmail(String token) {
-        User user = repository.findByVerificationToken(token)
+        User user = userRepository.findByVerificationToken(token)
                 .orElseThrow(() -> new RuntimeException("Token no válido o expirado"));
 
         if (user.getTokenExpiration().before(new Date())) {
@@ -128,14 +128,14 @@ public class UserServiceImpl implements UserService {
         user.setEmailVerified(true);
         user.setVerificationToken(null);
         user.setTokenExpiration(null);
-        repository.save(user);
+        userRepository.save(user);
 
         return emailContent.buildVerifyEmailBody();
     }
 
     public Map<String, Object> sendPasswordResetEmail(String email) {
         Map<String, Object> response = new HashMap<>();
-        Optional<User> userOptional = repository.findByEmail(email);
+        Optional<User> userOptional = userRepository.findByEmail(email);
 
         if (!userOptional.isPresent()) {
             response.put("success", false);
@@ -164,7 +164,7 @@ public class UserServiceImpl implements UserService {
         calendar.add(Calendar.MINUTE, 15);
         user.setPasswordResetExpiration(calendar.getTime());
 
-        repository.save(user);
+        userRepository.save(user);
 
         String url = this.urlFrontEnd + "/reset-password?token=";
         String resetLink = url + resetToken;
@@ -193,7 +193,7 @@ public class UserServiceImpl implements UserService {
     public Map<String, Object> resetPassword(String tokenUser, String password) {
         Map<String, Object> response = new HashMap<>();
 
-        Optional<User> userOptional = repository.findByPasswordResetToken(tokenUser);
+        Optional<User> userOptional = userRepository.findByPasswordResetToken(tokenUser);
 
         if (!userOptional.isPresent()) {
             response.put("success", false);
@@ -220,7 +220,7 @@ public class UserServiceImpl implements UserService {
         user.setPasswordResetExpiration(null);
 
         // Guardar el usuario con la nueva contraseña
-        repository.save(user);
+        userRepository.save(user);
 
         response.put("success", true);
         response.put("message", "Contraseña restablecida exitosamente.");
@@ -230,17 +230,20 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public boolean toggleUserStatus(Long id) {
-        User user = repository.findById(id)
+        User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
+        if(user.isAdmin()){
+            return false;
+        }
         user.setEnabled(!user.isEnabled());
-        repository.save(user);
+        userRepository.save(user);
 
         return user.isEnabled(); // Retorna el nuevo estado
     }
 
     public Map<String, String> deleteUserById(Long id) {
-        Optional<User> userOpt = repository.findById(id);
+        Optional<User> userOpt = userRepository.findById(id);
         Map<String, String> response = new HashMap<>();
         System.out.println("Entro al servicio");
 
@@ -259,7 +262,7 @@ public class UserServiceImpl implements UserService {
             }
 
             // Si no es administrador, proceder con la eliminación
-            repository.delete(user);
+            userRepository.delete(user);
             response.put("message", "Usuario eliminado exitosamente.");
             return response;
         }
@@ -298,7 +301,7 @@ public class UserServiceImpl implements UserService {
         }
 
         // Buscar usuario
-        Optional<User> userOpt = repository.findById(id);
+        Optional<User> userOpt = userRepository.findById(id);
         if (userOpt.isEmpty()) {
             response.put("success", false);
             response.put("message", "Usuario no encontrado");
@@ -339,7 +342,7 @@ public class UserServiceImpl implements UserService {
         }
 
         // Guardar cambios
-        repository.save(user);
+        userRepository.save(user);
 
         // Eliminar tokens viejos
         activeTokenRepository.deleteOldTokensByUserId(user.getId());
@@ -371,7 +374,7 @@ public class UserServiceImpl implements UserService {
         // Verificamos si el usuario existe
 
         System.out.println(email);
-        Optional<User> userOptional = repository.findByEmail(email);
+        Optional<User> userOptional = userRepository.findByEmail(email);
 
         if (userOptional.isEmpty()) {
             // Si no existe, respondemos con un error
@@ -414,7 +417,7 @@ public class UserServiceImpl implements UserService {
 
         // Guardar el usuario con el nuevo token y expiración
         try {
-            repository.save(user);
+            userRepository.save(user);
         } catch (Exception e) {
             response.put("success", false);
             response.put("message", "Hubo un error al guardar el usuario.");

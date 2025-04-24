@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import java.util.Date;
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -219,12 +220,9 @@ public class User {
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((id == null) ? 0 : id.hashCode());
-        result = prime * result + ((email == null) ? 0 : email.hashCode());
-        return result;
+        return Objects.hash(id, email);
     }
+
 
     @Override
     public boolean equals(Object obj) {
@@ -252,11 +250,11 @@ public class User {
     public String toString() {
         StringBuilder result = new StringBuilder();
 
-        result.append("Name: " + this.getName());
-        result.append("Lastname: " + this.getLastname());
-        result.append("Email: " + this.getEmail());
-        result.append("Is admin: " + this.isAdmin());
-        result.append("Is verified: " + this.isEmailVerified());
+        result.append("Name: ").append(this.getName());
+        result.append("Lastname: ").append(this.getLastname());
+        result.append("Email: ").append(this.getEmail());
+        result.append("Is admin: ").append(this.isAdmin());
+        result.append("Is verified: ").append(this.isEmailVerified());
         return result.toString();
     }
 }
