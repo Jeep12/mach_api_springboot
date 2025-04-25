@@ -17,7 +17,6 @@ public class ProductVariation {
 
     private String value;
 
-    @Min(value = 0, message = "{Min.productVariation.stock}")
     private Integer stock;
 
     private Double price;
