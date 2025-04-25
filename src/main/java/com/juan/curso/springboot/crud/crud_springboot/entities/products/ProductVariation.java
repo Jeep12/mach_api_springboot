@@ -13,10 +13,8 @@ public class ProductVariation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "{NotBlank.productVariation.variationName}")
     private String variationName;
 
-    @NotBlank(message = "{NotBlank.productVariation.value}")
     private String value;
 
     @Min(value = 0, message = "{Min.productVariation.stock}")
