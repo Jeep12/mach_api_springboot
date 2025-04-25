@@ -1,4 +1,4 @@
-package com.juan.curso.springboot.crud.crud_springboot.dto;
+package com.juan.curso.springboot.crud.crud_springboot.dto.users;
 import com.juan.curso.springboot.crud.crud_springboot.entities.users.Role;
 
 import java.util.Date;

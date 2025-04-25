@@ -34,7 +34,7 @@ public class ProductController {
     private ProductValidation validation;
 
     @Autowired
-    ProductService service;
+    private ProductService service;
 
     @GetMapping
     public List<Product> list() {
@@ -52,7 +52,7 @@ public class ProductController {
     }
 
     // El BindingResult tiene que estar a la derecha del objeto que se va a validar
-   // @PreAuthorize("hasRole('ADMIN')")
+    // @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<?> create(@Valid @RequestBody Product product, BindingResult result) {
 
@@ -62,10 +62,11 @@ public class ProductController {
         }
         return ResponseEntity.status(HttpStatus.CREATED).body(service.save(product));
     }
-   // @PreAuthorize("hasRole('ADMIN')")
+
+    // @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<?> update(@Valid @RequestBody Product product, BindingResult result,
-            @PathVariable Long id) {
+                                    @PathVariable Long id) {
 
         validation.validate(product, result);
         if (result.hasFieldErrors()) {
@@ -78,7 +79,8 @@ public class ProductController {
         return ResponseEntity.notFound().build();
 
     }
-   // @PreAuthorize("hasRole('ADMIN')")
+
+    // @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(@PathVariable Long id) {
 

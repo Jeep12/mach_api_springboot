@@ -3,7 +3,7 @@ package com.juan.curso.springboot.crud.crud_springboot.services.users;
 import java.util.List;
 import java.util.Map;
 
-import com.juan.curso.springboot.crud.crud_springboot.dto.UserDto;
+import com.juan.curso.springboot.crud.crud_springboot.dto.users.UserDto;
 import com.juan.curso.springboot.crud.crud_springboot.entities.users.User;
 
 public interface UserService {

@@ -1,4 +1,4 @@
-package com.juan.curso.springboot.crud.crud_springboot.dto;
+package com.juan.curso.springboot.crud.crud_springboot.dto.users;
 import java.util.List;
 
 public class UserRolesRequest {

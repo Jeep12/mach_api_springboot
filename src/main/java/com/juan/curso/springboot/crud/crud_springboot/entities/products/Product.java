@@ -3,6 +3,7 @@ package com.juan.curso.springboot.crud.crud_springboot.entities.products;
 import jakarta.persistence.*;
 
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 
 import java.util.List;
@@ -15,12 +16,14 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotEmpty
     @Size(min = 4, max = 255)
     private String name;
 
     @Min(value = 0, message = "{Min.product.price}")
     private Double price;
 
+    @NotEmpty
     private String description;
 
     @ManyToOne

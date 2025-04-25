@@ -3,7 +3,7 @@ package com.juan.curso.springboot.crud.crud_springboot.services.users;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import com.juan.curso.springboot.crud.crud_springboot.dto.UserDto;
+import com.juan.curso.springboot.crud.crud_springboot.dto.users.UserDto;
 import com.juan.curso.springboot.crud.crud_springboot.entities.users.ActiveToken;
 import com.juan.curso.springboot.crud.crud_springboot.repositories.ActiveTokenRepository;
 import com.juan.curso.springboot.crud.crud_springboot.services.utils.EmailService;

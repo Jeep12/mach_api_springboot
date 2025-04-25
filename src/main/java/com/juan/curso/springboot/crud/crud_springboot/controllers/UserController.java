@@ -2,9 +2,9 @@ package com.juan.curso.springboot.crud.crud_springboot.controllers;
 
 import java.util.*;
 
-import com.juan.curso.springboot.crud.crud_springboot.dto.UserDto;
-import com.juan.curso.springboot.crud.crud_springboot.dto.UserRequestDto;
-import com.juan.curso.springboot.crud.crud_springboot.dto.UserRolesRequest;
+import com.juan.curso.springboot.crud.crud_springboot.dto.users.UserDto;
+import com.juan.curso.springboot.crud.crud_springboot.dto.users.UserRequestDto;
+import com.juan.curso.springboot.crud.crud_springboot.dto.users.UserRolesRequest;
 import com.juan.curso.springboot.crud.crud_springboot.entities.users.ActiveToken;
 import com.juan.curso.springboot.crud.crud_springboot.repositories.ActiveTokenRepository;
 import com.juan.curso.springboot.crud.crud_springboot.repositories.RoleRepository;
@@ -19,7 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
-import com.juan.curso.springboot.crud.crud_springboot.dto.PasswordResetRequestDto;
+import com.juan.curso.springboot.crud.crud_springboot.dto.users.PasswordResetRequestDto;
 import com.juan.curso.springboot.crud.crud_springboot.entities.users.User;
 import com.juan.curso.springboot.crud.crud_springboot.services.utils.CaptchaService;
 import com.juan.curso.springboot.crud.crud_springboot.services.users.UserService;
