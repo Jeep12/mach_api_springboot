@@ -1,5 +1,5 @@
 package com.juan.curso.springboot.crud.crud_springboot.dto;
-import com.juan.curso.springboot.crud.crud_springboot.entities.Role;
+import com.juan.curso.springboot.crud.crud_springboot.entities.users.Role;
 
 import java.util.Date;
 import java.util.List;

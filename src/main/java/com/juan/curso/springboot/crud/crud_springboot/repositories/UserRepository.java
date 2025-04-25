@@ -4,7 +4,7 @@ import java.util.Optional;
 
 import org.springframework.data.repository.CrudRepository;
 
-import com.juan.curso.springboot.crud.crud_springboot.entities.User;
+import com.juan.curso.springboot.crud.crud_springboot.entities.users.User;
 import org.springframework.stereotype.Repository;
 
 @Repository

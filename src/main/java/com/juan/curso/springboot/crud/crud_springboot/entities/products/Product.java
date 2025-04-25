@@ -1,36 +1,37 @@
-package com.juan.curso.springboot.crud.crud_springboot.entities;
+package com.juan.curso.springboot.crud.crud_springboot.entities.products;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+
+import java.util.List;
 
 @Entity
 @Table(name = "products")
 public class Product {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)//Es auto incremental
-    private  Long id;
 
-    @NotEmpty(message = "{NotEmpty.product.name}")
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
     @Size(min = 4, max = 255)
     private String name;
 
     @Min(value = 0, message = "{Min.product.price}")
-    @NotNull(message = "{NotNull.product.price}")
-    private Integer price;
+    private Double price;
 
-    @NotBlank(message = "{NotBlank.product.description}")
     private String description;
 
-    
+    @ManyToOne
+    @JoinColumn(name = "category_id")
+    private ProductCategory category;
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
+    private List<ProductVariation> variations;
+
+
+
 
     public Long getId() {
         return id;
@@ -48,11 +49,11 @@ public class Product {
         this.name = name;
     }
 
-    public Integer getPrice() {
+    public Double getPrice() {
         return price;
     }
 
-    public void setPrice(Integer price) {
+    public void setPrice(Double price) {
         this.price = price;
     }
 

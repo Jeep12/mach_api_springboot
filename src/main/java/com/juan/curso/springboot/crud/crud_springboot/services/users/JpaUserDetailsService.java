@@ -1,4 +1,4 @@
-package com.juan.curso.springboot.crud.crud_springboot.services;
+package com.juan.curso.springboot.crud.crud_springboot.services.users;
 
 import java.util.List;
 import java.util.Optional;
@@ -13,7 +13,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.juan.curso.springboot.crud.crud_springboot.entities.User;
+import com.juan.curso.springboot.crud.crud_springboot.entities.users.User;
 import com.juan.curso.springboot.crud.crud_springboot.exceptions.EmailNotFoundException;
 import com.juan.curso.springboot.crud.crud_springboot.repositories.UserRepository;
 

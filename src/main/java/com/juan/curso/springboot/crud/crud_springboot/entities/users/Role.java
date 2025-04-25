@@ -1,4 +1,4 @@
-package com.juan.curso.springboot.crud.crud_springboot.entities;
+package com.juan.curso.springboot.crud.crud_springboot.entities.users;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.juan.curso.springboot.crud.crud_springboot.services;
+package com.juan.curso.springboot.crud.crud_springboot.services.utils;
 
 
 import org.springframework.beans.factory.annotation.Value;

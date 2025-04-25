@@ -4,10 +4,9 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import com.juan.curso.springboot.crud.crud_springboot.entities.ActiveToken;
+import com.juan.curso.springboot.crud.crud_springboot.entities.users.ActiveToken;
 import com.juan.curso.springboot.crud.crud_springboot.repositories.ActiveTokenRepository;
 import com.juan.curso.springboot.crud.crud_springboot.repositories.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -18,7 +17,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import com.fasterxml.jackson.core.exc.StreamReadException;
 import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.juan.curso.springboot.crud.crud_springboot.entities.User;
+import com.juan.curso.springboot.crud.crud_springboot.entities.users.User;
 
 import io.jsonwebtoken.Jwts;
 import jakarta.servlet.FilterChain;

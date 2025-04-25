@@ -1,6 +1,6 @@
 package com.juan.curso.springboot.crud.crud_springboot.repositories;
 
-import com.juan.curso.springboot.crud.crud_springboot.entities.ActiveToken;
+import com.juan.curso.springboot.crud.crud_springboot.entities.users.ActiveToken;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;

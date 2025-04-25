@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import com.juan.curso.springboot.crud.crud_springboot.entities.ActiveToken;
+import com.juan.curso.springboot.crud.crud_springboot.entities.users.ActiveToken;
 import com.juan.curso.springboot.crud.crud_springboot.repositories.ActiveTokenRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;

@@ -1,4 +1,4 @@
-package com.juan.curso.springboot.crud.crud_springboot.entities;
+package com.juan.curso.springboot.crud.crud_springboot.entities.users;
 
 import jakarta.persistence.*;
 
@@ -12,7 +12,7 @@ public class ActiveToken {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(length = 512, nullable = false, unique = true )
     private String token;
 
     @ManyToOne

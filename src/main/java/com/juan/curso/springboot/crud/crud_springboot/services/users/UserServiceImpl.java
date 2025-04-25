@@ -1,26 +1,23 @@
-package com.juan.curso.springboot.crud.crud_springboot.services;
+package com.juan.curso.springboot.crud.crud_springboot.services.users;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import com.juan.curso.springboot.crud.crud_springboot.dto.UserDto;
-import com.juan.curso.springboot.crud.crud_springboot.entities.ActiveToken;
+import com.juan.curso.springboot.crud.crud_springboot.entities.users.ActiveToken;
 import com.juan.curso.springboot.crud.crud_springboot.repositories.ActiveTokenRepository;
+import com.juan.curso.springboot.crud.crud_springboot.services.utils.EmailService;
 import com.juan.curso.springboot.crud.crud_springboot.utils.EmailContent;
 import com.juan.curso.springboot.crud.crud_springboot.utils.JwtTokenUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
-import com.juan.curso.springboot.crud.crud_springboot.entities.Role;
-import com.juan.curso.springboot.crud.crud_springboot.entities.User;
+import com.juan.curso.springboot.crud.crud_springboot.entities.users.Role;
+import com.juan.curso.springboot.crud.crud_springboot.entities.users.User;
 import com.juan.curso.springboot.crud.crud_springboot.utils.CodeGenerator;
 import com.juan.curso.springboot.crud.crud_springboot.repositories.RoleRepository;
 import com.juan.curso.springboot.crud.crud_springboot.repositories.UserRepository;

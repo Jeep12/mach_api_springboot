@@ -5,7 +5,7 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.ValidationUtils;
 import org.springframework.validation.Validator;
 
-import com.juan.curso.springboot.crud.crud_springboot.entities.Product;
+import com.juan.curso.springboot.crud.crud_springboot.entities.products.Product;
 @Component
 public class ProductValidation implements Validator {
 

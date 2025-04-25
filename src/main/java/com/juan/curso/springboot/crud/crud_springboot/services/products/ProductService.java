@@ -1,9 +1,9 @@
-package com.juan.curso.springboot.crud.crud_springboot.services;
+package com.juan.curso.springboot.crud.crud_springboot.services.products;
 
 import java.util.List;
 import java.util.Optional;
 
-import com.juan.curso.springboot.crud.crud_springboot.entities.Product;
+import com.juan.curso.springboot.crud.crud_springboot.entities.products.Product;
 
 public interface ProductService {
 

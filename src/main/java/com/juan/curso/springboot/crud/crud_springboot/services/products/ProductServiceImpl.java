@@ -1,4 +1,4 @@
-package com.juan.curso.springboot.crud.crud_springboot.services;
+package com.juan.curso.springboot.crud.crud_springboot.services.products;
 
 import java.util.List;
 import java.util.Optional;
@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.juan.curso.springboot.crud.crud_springboot.entities.Product;
+import com.juan.curso.springboot.crud.crud_springboot.entities.products.Product;
 import com.juan.curso.springboot.crud.crud_springboot.repositories.ProductRepository;
 
 @Service

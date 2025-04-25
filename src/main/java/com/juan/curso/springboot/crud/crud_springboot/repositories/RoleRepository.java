@@ -5,7 +5,7 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
-import com.juan.curso.springboot.crud.crud_springboot.entities.Role;
+import com.juan.curso.springboot.crud.crud_springboot.entities.users.Role;
 
 public interface RoleRepository extends CrudRepository<Role, Long> {
 
