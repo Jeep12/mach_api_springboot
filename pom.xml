@@ -30,6 +30,12 @@
 		<java.version>17</java.version>
 	</properties>
 	<dependencies>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -83,7 +89,7 @@
 
 	<dependency>
 		<groupId>io.jsonwebtoken</groupId>
-		<artifactId>jjwt-jackson</artifactId> 
+		<artifactId>jjwt-jackson</artifactId>
 		<version>0.12.6</version>
 		<scope>runtime</scope>
 	</dependency>
@@ -110,6 +116,6 @@
 	</build>
 
 
-	
+
 
 </project>

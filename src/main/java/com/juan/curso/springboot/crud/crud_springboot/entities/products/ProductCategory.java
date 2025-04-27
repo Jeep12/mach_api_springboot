@@ -1,6 +1,7 @@
 package com.juan.curso.springboot.crud.crud_springboot.entities.products;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 
 import java.util.Date;
 import java.util.List;
@@ -14,9 +15,12 @@ public class ProductCategory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+  
+    @NotBlank(message = "es obligatorio")
     @Column(nullable = false, unique = true)
     private String name;
 
+    @NotBlank(message = "es obligatorio")
     private String description;
 
     @Temporal(TemporalType.TIMESTAMP)
@@ -27,6 +31,14 @@ public class ProductCategory {
 
     @OneToMany(mappedBy = "category")
     private List<Product> products;
+
+    public ProductCategory(){
+        
+    }
+    public ProductCategory(String name, String description) {
+        this.name = name;
+        this.description = description;
+    }
 
     @PrePersist
     public void prePersist() {
